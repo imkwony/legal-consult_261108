@@ -51,3 +51,14 @@ test('toDocxBlob maps headings, bullets and bold runs', async () => {
   const boldPara = made.find((p) => p.children?.some((r) => r.o.bold));
   assert.equal(boldPara.children.find((r) => r.o.bold).o.text, '결론');
 });
+
+test('fileBaseName has no trailing space when title is cut mid-word', () => {
+  const name = fileBaseName({ ...c, title: '전세 보증금 3천만원을 집주인이 안 돌려줘서' });
+  assert.equal(name, '법률상담_2026-11-08_전세 보증금 3천만원을 집주인이 안');
+});
+
+test('toMarkdown flags failed citations', () => {
+  const bad = { ...c, messages: [{ role: 'assistant', content: '답', verification: '✗ 민법 제999조의9 — 해당 조문 없음' }] };
+  assert.ok(toMarkdown(bad).includes('> ⚠ 확인되지 않은 인용: 민법 제999조의9 — 해당 조문 없음'));
+  assert.ok(!toMarkdown(c).includes('확인되지 않은 인용'));
+});

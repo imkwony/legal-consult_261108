@@ -20,3 +20,8 @@ export function featureSummary(tool) {
   if (d.length > 140) d = d.slice(0, 140) + '…';
   return { name: tool.name, title: tool.title || tool.name, summary: d };
 }
+
+// 인용 검증 결과에서 실패(✗로 시작하는 줄)만 뽑는다
+export function verificationWarnings(text) {
+  return String(text || '').split('\n').map((l) => l.trim()).filter((l) => l.startsWith('✗')).map((l) => l.replace(/^✗\s*/, ''));
+}

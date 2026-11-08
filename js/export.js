@@ -1,4 +1,6 @@
 // 상담 기록 내려받기: Markdown / Word(docx) / PDF(브라우저 인쇄)
+import { verificationWarnings } from './tools.js';
+
 const DISCLAIMER = '※ 이 기록은 참고용입니다. 중요한 결정 전에는 변호사와 확인하세요.';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -12,7 +14,7 @@ function localDateTime(iso) {
 }
 
 export function fileBaseName(c) {
-  const title = String(c.title || '상담').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20);
+  const title = String(c.title || '상담').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20).trim();
   return `법률상담_${localDate(c.createdAt)}_${title}`;
 }
 
@@ -27,6 +29,7 @@ export function toMarkdown(c) {
       lines.push(m.content, '');
     } else {
       lines.push(`## 답변 ${++a}`, '', m.content, '');
+      for (const w of verificationWarnings(m.verification)) lines.push(`> ⚠ 확인되지 않은 인용: ${w}`, '');
       if (m.verification) lines.push(...m.verification.split('\n').map((l, i) => (i === 0 ? `> 인용 확인: ${l}` : `> ${l}`)), '');
     }
   }

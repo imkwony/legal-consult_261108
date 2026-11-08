@@ -6,7 +6,7 @@ import { answer } from './agent.js';
 import { newConsultation, makeTitle } from './consultation.js';
 import { readPdf } from './pdf.js';
 import { toMarkdown, toDocxBlob, fileBaseName, downloadBlob, printConsultation } from './export.js';
-import { featureSummary } from './tools.js';
+import { featureSummary, verificationWarnings } from './tools.js';
 
 const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs';
 const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
@@ -45,7 +45,11 @@ function renderMessages() {
     const verify = m.verification
       ? `<details><summary>인용 확인 결과 (판례·조문이 실제로 있는지 확인)</summary><pre>${esc(m.verification)}</pre></details>`
       : '';
-    return `<div class="msg assistant"><div class="who">상담 답변</div>${DOMPurify.sanitize(marked.parse(m.content || ''))}${verify}</div>`;
+    const warns = verificationWarnings(m.verification);
+    const warnBox = warns.length
+      ? `<div class="warnbox"><strong>⚠ 확인되지 않은 인용이 있어요.</strong> 아래 내용은 법령·판례 데이터베이스에서 찾지 못했습니다. 이 부분은 믿지 마시고 변호사에게 꼭 확인하세요.<ul>${warns.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div>`
+      : '';
+    return `<div class="msg assistant"><div class="who">상담 답변</div>${DOMPurify.sanitize(marked.parse(m.content || ''))}${warnBox}${verify}</div>`;
   }).join('');
 }
 

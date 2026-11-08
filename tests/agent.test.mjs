@@ -155,3 +155,34 @@ test('featureSummary gives Korean title and short description', async () => {
   assert.equal(long.title, 'x');
   assert.ok(long.summary.length <= 141);
 });
+
+test('tool calls in one round run concurrently and keep order', async () => {
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const reply = {
+    message: { role: 'assistant', content: null, tool_calls: ['a', 'b', 'c'].map((q, i) => ({ id: 'c' + i, type: 'function', function: { name: 'search_law', arguments: JSON.stringify({ query: q }) } })) },
+    finishReason: 'tool_calls',
+  };
+  const chats = [];
+  const deps = {
+    chat: async (args) => { chats.push(structuredClone(args)); return chats.length === 1 ? reply : final('답'); },
+    gasCall: async (url, action, p) => {
+      if (action === 'mcp_tools') return mcpTools;
+      inFlight++; maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((r) => setTimeout(r, 20));
+      inFlight--;
+      return { text: 'r-' + (p.arguments.query || 'v'), isError: false };
+    },
+  };
+  await answer({ consultation: consultationWith('q'), settings: { ...settings, scriptUrl: 'https://gas/parallel' } }, deps);
+  assert.equal(maxInFlight, 3);
+  assert.deepEqual(chats[1].messages.slice(-3).map((m) => [m.tool_call_id, m.content]), [['c0', 'r-a'], ['c1', 'r-b'], ['c2', 'r-c']]);
+});
+
+test('verificationWarnings extracts failed citations only', async () => {
+  const { verificationWarnings } = await import('../js/tools.js');
+  const v = '[HALLUCINATION_DETECTED] == 인용 검증 결과 ==\n법령 인용 10건 | ✓ 8 실존 | ✗ 1 오류\n✓ 민법 제162조 실존\n✗ 민법 제163조의3 — [NOT_FOUND] 해당 조문 없음 (존재 범위: 제1조~제1118조)\n✗ 2099다1 실존불가\n⚠ (법령명 미지정) 제163조 제1호 — 법령명 추출 실패';
+  assert.deepEqual(verificationWarnings(v), ['민법 제163조의3 — [NOT_FOUND] 해당 조문 없음 (존재 범위: 제1조~제1118조)', '2099다1 실존불가']);
+  assert.deepEqual(verificationWarnings('✓ 전부 실존'), []);
+  assert.deepEqual(verificationWarnings(undefined), []);
+});

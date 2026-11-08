@@ -56,17 +56,17 @@ export async function answer({ consultation, settings, onStatus = () => {} }, de
       break;
     }
     messages.push(message);
-    for (const call of calls) {
+    // 한 번에 요청된 도구들은 동시에 조회한다 (결과 순서는 요청 순서 유지)
+    const results = await Promise.all(calls.map(async (call) => {
       const args = parseArgs(call.function.arguments);
       onStatus(statusLabel(call.function.name, args));
-      let result;
       try {
-        result = truncate((await mcp(call.function.name, args)).text);
+        return truncate((await mcp(call.function.name, args)).text);
       } catch (err) {
-        result = `자료 조회 실패: ${err.message}`;
+        return `자료 조회 실패: ${err.message}`;
       }
-      messages.push({ role: 'tool', tool_call_id: call.id, content: result });
-    }
+    }));
+    calls.forEach((call, i) => messages.push({ role: 'tool', tool_call_id: call.id, content: results[i] }));
   }
   if (!content) content = '죄송합니다. 답변을 만들지 못했어요. 다시 한 번 질문해 주세요.';
 
