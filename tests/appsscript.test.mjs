@@ -141,7 +141,7 @@ test('mcp_call falls back to secondary URL on 403', () => {
 });
 
 test('mcp_tools returns tool list and caches it', () => {
-  const tools = [{ name: 'search_law', description: 'd', inputSchema: { type: 'object' } }];
+  const tools = [{ name: 'search_law', title: '법령 검색', description: 'd', inputSchema: { type: 'object' } }];
   const { call, fetches } = load({
     fetchImpl: (url, opts) => {
       const b = JSON.parse(opts.payload);

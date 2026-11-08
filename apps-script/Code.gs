@@ -110,7 +110,7 @@ function mcpTools_() {
   var hit = cache.get(TOOLS_CACHE_KEY);
   if (hit) return JSON.parse(hit);
   var tools = mcpRequest_('tools/list', {}).tools.map(function (t) {
-    return { name: t.name, description: t.description || '', inputSchema: t.inputSchema || { type: 'object' } };
+    return { name: t.name, title: t.title || t.name, description: t.description || '', inputSchema: t.inputSchema || { type: 'object' } };
   });
   try { cache.put(TOOLS_CACHE_KEY, JSON.stringify(tools), 21600); } catch (e) { /* 캐시 용량 초과는 무시 */ }
   return tools;
