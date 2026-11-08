@@ -19,6 +19,28 @@ export function statusLabel(name, args = {}) {
   }
 }
 
+// 자주 나는 오류를 어르신이 이해할 수 있는 말로 바꾼다
+export function friendlyError(msg) {
+  const m = String(msg || '');
+  if (/too long|maximum context|context length|\b413\b|too many tokens/i.test(m)) return '상담 내용이 너무 길어요. "새 상담"을 눌러 질문을 나눠서 다시 해 주세요.';
+  if (/timeout|timed out|시간 초과/i.test(m)) return '답변을 만드는 데 시간이 너무 오래 걸렸어요. 질문을 짧게 나눠서 다시 해 주세요.';
+  if (/\b429\b|rate limit/i.test(m)) return '사용량이 잠시 많아요. 1분쯤 지나 잠시 후 다시 시도해 주세요.';
+  return m;
+}
+
+// AI 호출은 한 번 실패하면 한 번 더 시도한다
+async function chatWithRetry(chat, args) {
+  try {
+    return await chat(args);
+  } catch {
+    try {
+      return await chat(args);
+    } catch (err) {
+      throw new Error(friendlyError(err.message));
+    }
+  }
+}
+
 function getTools(gasCall, scriptUrl) {
   if (!toolsCache.has(gasCall)) {
     const p = gasCall(scriptUrl, 'mcp_tools').then(toOpenAITools);
@@ -49,7 +71,7 @@ export async function answer({ consultation, settings, onStatus = () => {} }, de
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
     const toolChoice = round === MAX_TOOL_ROUNDS ? 'none' : undefined;
     onStatus(round === 0 ? '질문을 살펴보는 중…' : '자료를 정리하는 중…');
-    const { message } = await chat({ settings, messages, tools, toolChoice });
+    const { message } = await chatWithRetry(chat, { settings, messages, tools, toolChoice });
     const calls = message.tool_calls || [];
     if (!calls.length || toolChoice) {
       content = message.content || '';

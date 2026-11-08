@@ -186,3 +186,41 @@ test('verificationWarnings extracts failed citations only', async () => {
   assert.deepEqual(verificationWarnings('✓ 전부 실존'), []);
   assert.deepEqual(verificationWarnings(undefined), []);
 });
+
+test('chat failure is retried once before giving up', async () => {
+  let n = 0;
+  const deps = {
+    chat: async () => { n++; if (n === 1) throw new Error('BAZE 오류 502: bad gateway'); return final('답'); },
+    gasCall: async (u, action) => (action === 'mcp_tools' ? mcpTools : { text: 'v', isError: false }),
+  };
+  const r = await answer({ consultation: consultationWith('q'), settings: { ...settings, scriptUrl: 'https://gas/retry' } }, deps);
+  assert.equal(r.content, '답');
+  assert.equal(n, 2);
+});
+
+test('repeated chat failure throws a friendly Korean message', async () => {
+  const deps = {
+    chat: async () => { throw new Error('Exception: Timeout: https://api.baze.co/v1/gateway/chat/completions/'); },
+    gasCall: async (u, action) => (action === 'mcp_tools' ? mcpTools : { text: 'v', isError: false }),
+  };
+  await assert.rejects(answer({ consultation: consultationWith('q'), settings: { ...settings, scriptUrl: 'https://gas/fail' } }, deps), /시간이 너무 오래 걸렸어요/);
+});
+
+test('friendlyError maps common failures', async () => {
+  const { friendlyError } = await import('../js/agent.js');
+  assert.match(friendlyError('BAZE 오류 400: prompt is too long: 250000 tokens > 200000 maximum'), /상담 내용이 너무 길어요/);
+  assert.match(friendlyError('BAZE 오류 413: payload'), /상담 내용이 너무 길어요/);
+  assert.match(friendlyError('BAZE 오류 429: rate'), /잠시 후 다시/);
+  assert.match(friendlyError('Exception: Timeout'), /시간이 너무 오래 걸렸어요/);
+  assert.equal(friendlyError('뭔가 다른 오류'), '뭔가 다른 오류');
+});
+
+test('shouldSendOnEnter only on desktop Enter without Shift or IME', async () => {
+  const { shouldSendOnEnter } = await import('../js/consultation.js');
+  const e = (o) => ({ key: 'Enter', shiftKey: false, isComposing: false, ...o });
+  assert.equal(shouldSendOnEnter(e(), true), true);
+  assert.equal(shouldSendOnEnter(e(), false), false);
+  assert.equal(shouldSendOnEnter(e({ shiftKey: true }), true), false);
+  assert.equal(shouldSendOnEnter(e({ isComposing: true }), true), false);
+  assert.equal(shouldSendOnEnter(e({ key: 'a' }), true), false);
+});

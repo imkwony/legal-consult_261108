@@ -51,3 +51,11 @@ test('readPdf rejects over 20 pages', async () => {
     /20쪽 이하로 나눠서 올려 주세요/,
   );
 });
+
+test('readPdf caps very long text and marks it', async () => {
+  const page = '가'.repeat(10000);
+  const r = await readPdf(file(), { settings }, { pdfjs: fakePdfjs(Array(10).fill(page)), chat: async () => ({}), renderPage: async () => '' });
+  assert.ok(r.text.length <= 60100);
+  assert.ok(r.text.endsWith('(문서가 길어 앞부분 6만 자만 사용했습니다)'));
+  assert.equal(r.truncated, true);
+});

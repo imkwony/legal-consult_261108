@@ -17,3 +17,8 @@ export function toLlmMessages(c) {
     return { role: m.role, content: m.content };
   });
 }
+
+// 컴퓨터(마우스)에서만 Enter로 보낸다. 휴대폰 자판의 Enter는 줄바꿈으로 둔다.
+export function shouldSendOnEnter(e, finePointer) {
+  return finePointer && e.key === 'Enter' && !e.shiftKey && !e.isComposing;
+}

@@ -93,3 +93,8 @@ test('chat throws readable error on BAZE http error', async () => {
     /401/,
   );
 });
+
+test('gasCall HTML response suggests retry before changing settings', async () => {
+  const f = fakeFetch('<html>Exceeded maximum execution time</html>');
+  await assert.rejects(gasCall('https://gas/exec', 'chat', {}, f), /잠시 후 다시/);
+});

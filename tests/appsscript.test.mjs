@@ -181,3 +181,10 @@ test('opens spreadsheet by SHEET_ID property when set', () => {
   call({ action: 'list' });
   assert.deepEqual(opened, ['SID123']);
 });
+
+test('title starting with an apostrophe survives save and list', () => {
+  const { call } = load();
+  call({ action: 'save', consultation: consultation('q1', "'전세' 보증금", 'x') });
+  assert.equal(call({ action: 'list' }).data[0].title, "'전세' 보증금");
+  assert.equal(call({ action: 'load', id: 'q1' }).data.title, "'전세' 보증금");
+});

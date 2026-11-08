@@ -2,6 +2,14 @@
 import { chat as defaultChat } from './llm.js';
 
 export const MAX_OCR_PAGES = 20;
+export const MAX_ATTACH_CHARS = 60000;
+const CUT_NOTE = '\n…(문서가 길어 앞부분 6만 자만 사용했습니다)';
+
+// 너무 긴 문서는 AI가 한 번에 받을 수 있는 양을 넘으므로 앞부분만 쓴다
+function capped(name, text) {
+  if (text.length <= MAX_ATTACH_CHARS) return { name, text, truncated: false };
+  return { name, text: text.slice(0, MAX_ATTACH_CHARS) + CUT_NOTE, truncated: true };
+}
 const OCR_PROMPT = '이 문서의 글자를 빠짐없이 그대로 받아 적어 주세요. 설명은 쓰지 마세요.';
 
 export function looksScanned(pageTexts) {
@@ -29,7 +37,7 @@ export async function readPdf(file, { settings, onStatus = () => {} }, deps = {}
   const texts = [];
   for (const p of pages) texts.push((await p.getTextContent()).items.map((it) => it.str).join(' '));
 
-  if (!looksScanned(texts)) return { name: file.name, text: texts.join('\n\n').trim() };
+  if (!looksScanned(texts)) return capped(file.name, texts.join('\n\n').trim());
 
   if (pages.length > MAX_OCR_PAGES) throw new Error(`스캔한 PDF는 ${MAX_OCR_PAGES}쪽 이하로 나눠서 올려 주세요.`);
   const out = [];
@@ -42,5 +50,5 @@ export async function readPdf(file, { settings, onStatus = () => {} }, deps = {}
     });
     out.push(String(message?.content || '').trim());
   }
-  return { name: file.name, text: out.join('\n\n') };
+  return capped(file.name, out.join('\n\n'));
 }

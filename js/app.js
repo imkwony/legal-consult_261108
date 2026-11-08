@@ -3,7 +3,7 @@ import DOMPurify from 'https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.
 import { loadSettings, saveSettings, isConfigured, DEFAULT_MODEL } from './settings.js';
 import { gasCall } from './gas.js';
 import { answer } from './agent.js';
-import { newConsultation, makeTitle } from './consultation.js';
+import { newConsultation, makeTitle, shouldSendOnEnter } from './consultation.js';
 import { readPdf } from './pdf.js';
 import { toMarkdown, toDocxBlob, fileBaseName, downloadBlob, printConsultation } from './export.js';
 import { featureSummary, verificationWarnings } from './tools.js';
@@ -67,12 +67,13 @@ function setBusy(b) {
 }
 
 let toastTimer;
-function toast(msg) {
+function toast(msg, ms = 5000) {
   $('toast').textContent = msg;
   $('toast').hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { $('toast').hidden = true; }, 4000);
+  toastTimer = setTimeout(() => { $('toast').hidden = true; }, ms);
 }
+const toastError = (msg) => toast(msg, 10000);
 
 function renderPending() {
   $('attachments').innerHTML = state.pending.map((a, i) => `<span class="chip">📎 ${esc(a.name)} <button type="button" data-remove="${i}" aria-label="첨부 삭제">✕</button></span>`).join('');
@@ -112,12 +113,13 @@ async function send() {
     state.c.messages.push({ role: 'assistant', content: r.content, verification: r.verification });
     state.c.updatedAt = new Date().toISOString();
     renderMessages();
-    scrollToBottom();
+    // 결론이 맨 앞에 있으므로 새 답변의 처음으로 이동
+    [...document.querySelectorAll('.msg.assistant')].at(-1)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setStatus('상담 내용 저장 중…');
     try {
       await gasCall(state.settings.scriptUrl, 'save', { consultation: state.c });
     } catch (err) {
-      toast(`저장하지 못했어요: ${err.message}`);
+      toastError(`저장하지 못했어요: ${err.message}`);
     }
   } catch (err) {
     // 실패한 질문은 대화에서 빼고 입력창에 되돌려 다시 보낼 수 있게 한다
@@ -125,7 +127,7 @@ async function send() {
     $('input').value = msg.content;
     if (msg.attachments) { state.pending = msg.attachments; renderPending(); }
     renderMessages();
-    toast(`답변을 받지 못했어요: ${err.message}`);
+    toastError(`답변을 받지 못했어요: ${err.message}`);
   } finally {
     setStatus('');
     setBusy(false);
@@ -147,9 +149,9 @@ async function attachPdf(file) {
     if (!att.text.trim()) throw new Error('글자를 찾지 못했어요.');
     state.pending.push(att);
     renderPending();
-    toast(`"${file.name}"을(를) 읽었어요. 질문과 함께 보내 주세요.`);
+    toast(att.truncated ? `"${file.name}"이 길어서 앞부분 6만 자만 읽었어요. 나머지가 중요하면 PDF를 나눠서 올려 주세요.` : `"${file.name}"을(를) 읽었어요. 질문과 함께 보내 주세요.`, att.truncated ? 10000 : 5000);
   } catch (err) {
-    toast(`PDF를 읽지 못했어요: ${err.message}`);
+    toastError(`PDF를 읽지 못했어요: ${err.message}`);
   } finally {
     $('file').value = '';
     setStatus('');
@@ -186,6 +188,8 @@ async function loadOne(id) {
   $('load-list').textContent = '상담을 여는 중…';
   try {
     state.c = await gasCall(state.settings.scriptUrl, 'load', { id });
+    state.pending = [];
+    renderPending();
     renderMessages();
     $('dlg-load').close();
     scrollToBottom();
@@ -231,7 +235,7 @@ async function download(format) {
       document.title = prevTitle;
     }
   } catch (err) {
-    toast(`내려받지 못했어요: ${err.message}`);
+    toastError(`내려받지 못했어요: ${err.message}`);
   }
 }
 
@@ -255,7 +259,7 @@ function saveSettingsFromForm() {
 
 $('form').addEventListener('submit', (e) => { e.preventDefault(); send(); });
 $('input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); }
+  if (shouldSendOnEnter(e, matchMedia('(pointer: fine)').matches)) { e.preventDefault(); send(); }
 });
 $('file').addEventListener('change', (e) => attachPdf(e.target.files[0]));
 $('attachments').addEventListener('click', (e) => {

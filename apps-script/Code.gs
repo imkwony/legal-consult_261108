@@ -138,12 +138,11 @@ function sheet_() {
   return sh;
 }
 
-// 앞에 ' 를 붙여 수식·날짜 자동 변환을 막는다. 읽을 때 떼어낸다.
+// 앞에 ' 를 붙여 수식·날짜 자동 변환을 막는다. 시트는 이 ' 를 값에 넣지 않으므로 읽을 때는 그대로 쓴다.
 function txt_(s) { return "'" + s; }
-function untxt_(v) { return String(v).replace(/^'/, ''); }
 
 function findRow_(values, id) {
-  for (var r = 1; r < values.length; r++) if (untxt_(values[r][0]) === id) return r + 1;
+  for (var r = 1; r < values.length; r++) if (String(values[r][0]) === id) return r + 1;
   return -1;
 }
 
@@ -169,7 +168,7 @@ function listConsultations_() {
   var out = [];
   for (var r = 1; r < values.length; r++) {
     if (!values[r][0]) continue;
-    out.push({ id: untxt_(values[r][0]), title: untxt_(values[r][1]), updatedAt: untxt_(values[r][3]) });
+    out.push({ id: String(values[r][0]), title: String(values[r][1]), updatedAt: String(values[r][3]) });
   }
   out.sort(function (a, b) { return a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0; });
   return out;
@@ -179,6 +178,6 @@ function loadConsultation_(id) {
   var values = sheet_().getDataRange().getValues();
   var r = findRow_(values, id);
   if (r === -1) throw new Error('저장된 상담을 찾을 수 없습니다');
-  var json = values[r - 1].slice(4).map(function (v) { return v === '' ? '' : untxt_(v); }).join('');
+  var json = values[r - 1].slice(4).map(function (v) { return String(v); }).join('');
   return JSON.parse(json);
 }
