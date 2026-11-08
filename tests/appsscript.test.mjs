@@ -188,3 +188,12 @@ test('title starting with an apostrophe survives save and list', () => {
   assert.equal(call({ action: 'list' }).data[0].title, "'전세' 보증금");
   assert.equal(call({ action: 'load', id: 'q1' }).data.title, "'전세' 보증금");
 });
+
+test('models returns BAZE llm list with owner key', () => {
+  const list = [{ id: 'm1', owned_by: 'claude', lifecycle: 'current', endpoints: ['/v1/gateway/chat/completions/'], profile_image_url: 'x' }];
+  const { call, fetches } = load({ fetchImpl: () => resp(200, JSON.stringify({ object: 'list', data: list })) });
+  const r = call({ action: 'models' });
+  assert.deepEqual(r.data, [{ id: 'm1', owned_by: 'claude', lifecycle: 'current', endpoints: ['/v1/gateway/chat/completions/'] }]);
+  assert.equal(fetches[0].url, 'https://api.baze.co/v1/gateway/models/?type=llm');
+  assert.equal(fetches[0].opts.headers.Authorization, 'Bearer OWNER');
+});

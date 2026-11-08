@@ -4,11 +4,29 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>법률 상담</title>
+  <script>
+    // 디자인 시안: ?design=classic | modern (선택은 이 기기에 기억)
+    (function () {
+      var d = new URLSearchParams(location.search).get('design');
+      try { if (d) localStorage.setItem('legalConsult.design', d); else d = localStorage.getItem('legalConsult.design'); } catch (e) {}
+      document.documentElement.dataset.design = d === 'modern' ? 'modern' : 'classic';
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="topbar">
-    <h1 class="brand">⚖️ 법률 상담</h1>
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M7 21h10M5 7h14M12 5l-7 2m7-2 7 2M5 7l-3 6a3 3 0 0 0 6 0L5 7Zm14 0-3 6a3 3 0 0 0 6 0l-3-6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div>
+        <h1>법률 상담</h1>
+        <p class="tagline">국가법령정보 기반 · 법령과 판례로 답합니다</p>
+      </div>
+    </div>
     <nav class="actions">
       <button id="btn-new" type="button">새 상담</button>
       <button id="btn-load" type="button">불러오기</button>
@@ -27,9 +45,15 @@
 
   <main id="chat" class="chat">
     <section id="welcome" class="welcome">
+      <p class="eyebrow">AI 법률 상담</p>
       <h2>무엇이든 편하게 물어보세요</h2>
       <p>국가법령정보센터의 실제 법 조문과 판례를 찾아본 뒤, 근거와 함께 쉽게 설명해 드립니다.</p>
-      <p class="hint">받은 소장이 있으면 내용을 붙여넣거나 📎 버튼으로 PDF를 올려 주세요.</p>
+      <ul class="pillars">
+        <li><strong>법령 원문 확인</strong><span>조문을 직접 찾아 인용합니다</span></li>
+        <li><strong>판례 검색</strong><span>비슷한 사건의 결과를 알려드립니다</span></li>
+        <li><strong>인용 검증</strong><span>답변 속 근거가 실제로 있는지 확인합니다</span></li>
+      </ul>
+      <p class="hint">받은 소장이 있으면 내용을 붙여넣거나 클립 버튼으로 PDF를 올려 주세요.</p>
       <div class="examples">
         <button type="button" class="example">소송을 당했는데 답변서는 어떻게 써야 하나요?</button>
         <button type="button" class="example">이 정도 소송이면 변호사를 꼭 선임해야 하나요?</button>
@@ -44,7 +68,8 @@
     <div id="attachments" class="attachments"></div>
     <form id="form" class="form">
       <label class="attach" title="PDF 첨부">
-        📎<span class="sr">PDF 첨부</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="sr">PDF 첨부</span>
         <input id="file" type="file" accept="application/pdf,.pdf" hidden>
       </label>
       <textarea id="input" rows="2" placeholder="질문을 입력하세요"></textarea>
@@ -55,16 +80,18 @@
   <dialog id="dlg-settings" class="dialog">
     <form method="dialog" id="settings-form">
       <h2>설정</h2>
-      <label>구글 스크립트 주소 <span class="req">(필수)</span>
-        <input id="set-script" type="url" placeholder="https://script.google.com/macros/s/.../exec" required>
-      </label>
-      <label>내 BAZE API 키 <span class="opt">(선택 — 비워두면 기본 키 사용)</span>
-        <input id="set-key" type="password" autocomplete="off" placeholder="비워두셔도 됩니다">
-      </label>
-      <label>AI 모델
-        <input id="set-model" type="text">
-      </label>
-      <p class="hint">설정은 이 기기의 브라우저에만 저장됩니다. 휴대폰에서는 한 번 더 입력해 주세요.</p>
+      <div class="field">
+        <span class="field-label">BAZE API 키 <span class="req" id="key-req">(필수)</span></span>
+        <input id="set-key" type="password" autocomplete="off" placeholder="BAZE API 키를 입력하세요">
+        <p id="key-default-note" class="note" hidden>기본 키로 상담합니다. 따로 입력하지 않으셔도 됩니다.</p>
+        <label class="check"><input type="checkbox" id="set-default"> 기본 키 사용하기</label>
+      </div>
+      <div class="field">
+        <label class="field-label" for="set-model">AI 모델</label>
+        <select id="set-model"></select>
+        <button type="button" id="btn-more-models" class="linkish">더 많은 모델 불러오기</button>
+      </div>
+      <p class="hint">설정은 이 기기의 브라우저에만 저장됩니다.</p>
       <div class="row">
         <button value="cancel" type="button" id="settings-cancel">취소</button>
         <button value="save" class="primary" id="settings-save">저장</button>

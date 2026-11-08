@@ -33,6 +33,7 @@ function handle_(req) {
     case 'mcp_tools': return mcpTools_();
     case 'mcp_call': return mcpCall_(req.name, req.arguments || {});
     case 'chat': return chat_(req.body);
+    case 'models': return models_();
     case 'save': return saveConsultation_(req.consultation);
     case 'list': return listConsultations_();
     case 'load': return loadConsultation_(req.id);
@@ -60,6 +61,20 @@ function chat_(body) {
   var text = res.getContentText();
   if (code >= 400) throw new Error('BAZE 오류 ' + code + ': ' + text.slice(0, 300));
   return JSON.parse(text);
+}
+
+function models_() {
+  var key = prop_('BAZE_API_KEY');
+  if (!key) throw new Error('스크립트 속성에 BAZE_API_KEY가 없습니다');
+  var res = UrlFetchApp.fetch('https://api.baze.co/v1/gateway/models/?type=llm', {
+    method: 'get',
+    headers: { Authorization: 'Bearer ' + key },
+    muteHttpExceptions: true,
+  });
+  if (res.getResponseCode() >= 400) throw new Error('BAZE 오류 ' + res.getResponseCode());
+  return (JSON.parse(res.getContentText()).data || []).map(function (m) {
+    return { id: m.id, owned_by: m.owned_by, lifecycle: m.lifecycle, endpoints: m.endpoints || [] };
+  });
 }
 
 // ---------- MCP ----------

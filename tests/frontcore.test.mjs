@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadSettings, saveSettings, isConfigured, DEFAULT_MODEL } from '../js/settings.js';
+import { loadSettings, saveSettings, isConfigured, DEFAULT_MODEL, SCRIPT_URL } from '../js/settings.js';
 import { gasCall } from '../js/gas.js';
 import { chat } from '../js/llm.js';
 
@@ -15,18 +15,32 @@ test('DEFAULT_MODEL is the verified model', () => {
   assert.equal(DEFAULT_MODEL, 'claude-sonnet-5-5');
 });
 
+test('script URL is fixed in code', () => {
+  assert.ok(SCRIPT_URL.startsWith("https://script.google.com/macros/s/") && SCRIPT_URL.endsWith("/exec"));
+});
+
 test('loadSettings returns defaults when storage throws', () => {
   const bad = { getItem: () => { throw new Error('blocked'); }, setItem: () => { throw new Error('blocked'); } };
-  assert.deepEqual(loadSettings(bad), { scriptUrl: '', bazeKey: '', model: DEFAULT_MODEL });
-  assert.doesNotThrow(() => saveSettings({ scriptUrl: 'x' }, bad));
+  assert.deepEqual(loadSettings(bad), { scriptUrl: SCRIPT_URL, useDefaultKey: true, bazeKey: '', model: DEFAULT_MODEL });
+  assert.doesNotThrow(() => saveSettings({ bazeKey: 'x' }, bad));
+});
+
+test('saved scriptUrl is ignored; fixed URL always wins', () => {
+  const s = memStorage();
+  s.setItem('legalConsult.settings', JSON.stringify({ scriptUrl: 'https://docs.google.com/spreadsheets/d/X/edit' }));
+  assert.equal(loadSettings(s).scriptUrl, SCRIPT_URL);
 });
 
 test('saveSettings then loadSettings round-trips and trims', () => {
   const s = memStorage();
-  saveSettings({ scriptUrl: ' https://script.google.com/macros/s/X/exec ', bazeKey: ' k ', model: '' }, s);
-  assert.deepEqual(loadSettings(s), { scriptUrl: 'https://script.google.com/macros/s/X/exec', bazeKey: 'k', model: DEFAULT_MODEL });
-  assert.equal(isConfigured(loadSettings(s)), true);
-  assert.equal(isConfigured(loadSettings(memStorage())), false);
+  saveSettings({ useDefaultKey: false, bazeKey: ' k ', model: ' gpt-6.1-sol ' }, s);
+  assert.deepEqual(loadSettings(s), { scriptUrl: SCRIPT_URL, useDefaultKey: false, bazeKey: 'k', model: 'gpt-6.1-sol' });
+});
+
+test('isConfigured needs own key unless default key is used', () => {
+  assert.equal(isConfigured({ useDefaultKey: true, bazeKey: '' }), true);
+  assert.equal(isConfigured({ useDefaultKey: false, bazeKey: '' }), false);
+  assert.equal(isConfigured({ useDefaultKey: false, bazeKey: 'k' }), true);
 });
 
 test('gasCall sends text/plain POST and returns data', async () => {
@@ -54,7 +68,7 @@ test('chat uses direct BAZE when bazeKey set', async () => {
   const f = fakeFetch(JSON.stringify(reply));
   let gasUsed = false;
   const r = await chat(
-    { settings: { scriptUrl: 'u', bazeKey: 'MYKEY', model: 'm1' }, messages: [{ role: 'user', content: 'q' }] },
+    { settings: { scriptUrl: 'u', useDefaultKey: false, bazeKey: 'MYKEY', model: 'm1' }, messages: [{ role: 'user', content: 'q' }] },
     { fetchFn: f, gasCall: async () => { gasUsed = true; } },
   );
   assert.deepEqual(r, { message: { role: 'assistant', content: '답' }, finishReason: 'stop' });
@@ -64,10 +78,10 @@ test('chat uses direct BAZE when bazeKey set', async () => {
   assert.equal(gasUsed, false);
 });
 
-test('chat proxies via gas when bazeKey empty', async () => {
+test('chat proxies via gas when default key is used', async () => {
   const seen = [];
   const r = await chat(
-    { settings: { scriptUrl: 'https://gas/exec', bazeKey: '', model: 'm2' }, messages: [], tools: [{ type: 'function' }] },
+    { settings: { scriptUrl: 'https://gas/exec', useDefaultKey: true, bazeKey: 'IGNORED', model: 'm2' }, messages: [], tools: [{ type: 'function' }] },
     { fetchFn: fakeFetch('{}'), gasCall: async (...a) => { seen.push(a); return reply; } },
   );
   assert.equal(r.message.content, '답');
@@ -89,7 +103,7 @@ test('chat passes tool_choice none when toolChoice is none', async () => {
 test('chat throws readable error on BAZE http error', async () => {
   const f = async () => ({ ok: false, status: 401, text: async () => '{"detail":"invalid key"}' });
   await assert.rejects(
-    chat({ settings: { bazeKey: 'bad', model: 'm' }, messages: [] }, { fetchFn: f }),
+    chat({ settings: { useDefaultKey: false, bazeKey: 'bad', model: 'm' }, messages: [] }, { fetchFn: f }),
     /401/,
   );
 });

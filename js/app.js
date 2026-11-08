@@ -7,6 +7,7 @@ import { newConsultation, makeTitle, shouldSendOnEnter } from './consultation.js
 import { readPdf } from './pdf.js';
 import { toMarkdown, toDocxBlob, fileBaseName, downloadBlob, printConsultation } from './export.js';
 import { featureSummary, verificationWarnings } from './tools.js';
+import { INITIAL_MODELS, chatModelsFrom, mergeModels, modelLabel } from './models.js';
 
 const PDFJS_URL = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs';
 const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
@@ -86,7 +87,7 @@ function scrollToBottom() {
 function requireSettings() {
   if (isConfigured(state.settings)) return true;
   openSettings();
-  toast('먼저 설정에서 구글 스크립트 주소를 넣어 주세요.');
+  toast('먼저 설정에서 BAZE API 키를 넣거나 "기본 키 사용하기"를 체크해 주세요.');
   return false;
 }
 
@@ -203,7 +204,6 @@ async function loadOne(id) {
 async function openFeatures() {
   const list = $('features-list');
   $('dlg-features').showModal();
-  if (!isConfigured(state.settings)) { list.textContent = '설정에서 구글 스크립트 주소를 넣으면 기능 목록이 보여요.'; return; }
   list.textContent = '불러오는 중…';
   try {
     const tools = await gasCall(state.settings.scriptUrl, 'mcp_tools');
@@ -241,16 +241,58 @@ async function download(format) {
 
 // ---------- 설정 ----------
 
+let modelOptions = INITIAL_MODELS;
+
+function renderModelOptions(selected) {
+  let opts = modelOptions;
+  if (selected && !opts.some((m) => m.id === selected)) opts = [...opts, { id: selected, label: modelLabel(selected) }];
+  $('set-model').innerHTML = opts.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('');
+  $('set-model').value = selected || DEFAULT_MODEL;
+}
+
+// '기본 키 사용하기'를 체크하면 키 입력칸 대신 안내 문구를 보여준다
+function syncKeyField() {
+  const useDefault = $('set-default').checked;
+  $('set-key').hidden = useDefault;
+  $('key-req').hidden = useDefault;
+  $('key-default-note').hidden = !useDefault;
+}
+
 function openSettings() {
-  $('set-script').value = state.settings.scriptUrl;
+  $('set-default').checked = state.settings.useDefaultKey;
   $('set-key').value = state.settings.bazeKey;
-  $('set-model').value = state.settings.model;
-  $('set-model').placeholder = DEFAULT_MODEL;
+  syncKeyField();
+  renderModelOptions(state.settings.model);
   if (!$('dlg-settings').open) $('dlg-settings').showModal();
 }
 
+async function loadMoreModels() {
+  const btn = $('btn-more-models');
+  btn.disabled = true;
+  btn.textContent = '모델 목록을 불러오는 중…';
+  try {
+    const raw = !$('set-default').checked && $('set-key').value.trim()
+      ? await fetchModelsDirect($('set-key').value.trim())
+      : await gasCall(state.settings.scriptUrl, 'models');
+    const selected = $('set-model').value;
+    modelOptions = mergeModels(INITIAL_MODELS, chatModelsFrom(raw));
+    renderModelOptions(selected);
+    btn.textContent = `모델 ${modelOptions.length}개를 불러왔어요`;
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = '더 많은 모델 불러오기';
+    toastError(`모델 목록을 가져오지 못했어요: ${err.message}`);
+  }
+}
+
+async function fetchModelsDirect(key) {
+  const res = await fetch('https://api.baze.co/v1/gateway/models/?type=llm', { headers: { Authorization: `Bearer ${key}` } });
+  if (!res.ok) throw new Error(`AI 서버 오류 ${res.status}`);
+  return (await res.json()).data || [];
+}
+
 function saveSettingsFromForm() {
-  saveSettings({ scriptUrl: $('set-script').value, bazeKey: $('set-key').value, model: $('set-model').value });
+  saveSettings({ useDefaultKey: $('set-default').checked, bazeKey: $('set-key').value, model: $('set-model').value });
   state.settings = loadSettings();
   toast('설정을 저장했어요.');
 }
@@ -276,10 +318,16 @@ $('btn-settings').addEventListener('click', openSettings);
 $('settings-cancel').addEventListener('click', () => $('dlg-settings').close());
 $('settings-form').addEventListener('submit', (e) => {
   if (e.submitter?.value === 'save') {
-    if (!$('set-script').value.trim()) { e.preventDefault(); toast('구글 스크립트 주소는 꼭 필요해요.'); return; }
+    if (!$('set-default').checked && !$('set-key').value.trim()) {
+      e.preventDefault();
+      toast('BAZE API 키를 입력하시거나 "기본 키 사용하기"를 체크해 주세요.');
+      return;
+    }
     saveSettingsFromForm();
   }
 });
+$('set-default').addEventListener('change', syncKeyField);
+$('btn-more-models').addEventListener('click', loadMoreModels);
 document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 
 $('btn-download').addEventListener('click', (e) => {

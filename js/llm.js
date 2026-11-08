@@ -1,4 +1,4 @@
-// BAZE Chat Completions 호출. 본인 키가 있으면 직접, 없으면 Apps Script가 소유자 키로 대신 호출.
+// BAZE Chat Completions 호출. 내 키를 쓰면 직접, '기본키 사용'이면 Apps Script가 소유자 키로 대신 호출.
 import { gasCall as defaultGasCall } from './gas.js';
 
 const BAZE_CHAT_URL = 'https://api.baze.co/v1/gateway/chat/completions/';
@@ -11,7 +11,7 @@ export async function chat({ settings, messages, tools, toolChoice }, deps = {})
   if (toolChoice) body.tool_choice = toolChoice;
 
   let json;
-  if (settings.bazeKey) {
+  if (settings.useDefaultKey === false && settings.bazeKey) {
     const res = await fetchFn(BAZE_CHAT_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${settings.bazeKey}`, 'Content-Type': 'application/json' },
