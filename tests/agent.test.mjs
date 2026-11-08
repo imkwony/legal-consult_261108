@@ -144,3 +144,14 @@ test('newConsultation has id, timestamps and empty messages', () => {
 test('system prompt carries the core rules', () => {
   for (const s of ['변호사와 확인하세요', '사건번호', '확인하지 못했습니다', '답변서', 'search_law']) assert.ok(SYSTEM_PROMPT.includes(s), s);
 });
+
+test('featureSummary gives Korean title and short description', async () => {
+  const { featureSummary } = await import('../js/tools.js');
+  const s = featureSummary({ name: 'search_law', title: '법령 검색', description: 'Korean-law-mcp — [법령검색] 법령명·조례명 키워드검색 → lawId, mst 획득. 지자체 조례도 검색 — 0건 시 폴백' });
+  assert.equal(s.title, '법령 검색');
+  assert.equal(s.name, 'search_law');
+  assert.equal(s.summary, '법령명·조례명 키워드검색 → lawId, mst 획득.');
+  const long = featureSummary({ name: 'x', description: '가'.repeat(300) });
+  assert.equal(long.title, 'x');
+  assert.ok(long.summary.length <= 141);
+});
