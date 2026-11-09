@@ -4,14 +4,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>법률 상담</title>
-  <script>
-    // 디자인 시안: ?design=classic | modern (선택은 이 기기에 기억)
-    (function () {
-      var d = new URLSearchParams(location.search).get('design');
-      try { if (d) localStorage.setItem('legalConsult.design', d); else d = localStorage.getItem('legalConsult.design'); } catch (e) {}
-      document.documentElement.dataset.design = d === 'modern' ? 'modern' : 'classic';
-    })();
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&display=swap">

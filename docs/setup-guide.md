@@ -63,12 +63,6 @@
 3. **AI 모델**은 설정에서 고를 수 있습니다. **더 많은 모델 불러오기**를 누르면 BAZE의 전체 대화 모델이 나옵니다.
 4. 휴대폰에서는 사이트를 연 뒤 **홈 화면에 추가**를 해두면 앱처럼 쓸 수 있습니다.
 
-## 디자인 시안 보기
-- 법률사무소 클래식: `https://imkwony.github.io/legal-consult_261108/?design=classic`
-- 모던 미니멀: `https://imkwony.github.io/legal-consult_261108/?design=modern`
-
-마지막으로 연 시안이 그 기기에 기억됩니다.
-
 ---
 
 ## 코드를 고쳤을 때 (중요)

@@ -1,8 +1,5 @@
-/* ===== 디자인 토큰 =====
-   classic: 법률사무소 클래식 (남색·아이보리·명조 제목·금색 포인트)
-   modern : 모던 미니멀 (흰 배경·회색 선·진청 포인트·말풍선)            */
-:root,
-:root[data-design="classic"] {
+/* ===== 디자인 토큰: 법률사무소 클래식 (남색·아이보리·명조 제목·금색 포인트) ===== */
+:root {
   --bg: #f6f2e9;
   --surface: #fffdf8;
   --surface-2: #f1ece0;
@@ -16,44 +13,17 @@
   --bar-text: #f5efe2;
   --bar-muted: #c9bfa8;
   --bar-btn-line: rgba(245, 239, 226, 0.35);
-  --user-bg: transparent;
   --warn: #9a5b00;
   --heading-font: "Noto Serif KR", "Nanum Myeongjo", serif;
   --radius: 4px;
   --radius-lg: 6px;
   --shadow: none;
 }
-:root[data-design="modern"] {
-  --bg: #f4f6f9;
-  --surface: #ffffff;
-  --surface-2: #eef2f8;
-  --text: #111827;
-  --muted: #5f6b7a;
-  --line: #e2e7ee;
-  --accent: #2155d6;
-  --accent-text: #ffffff;
-  --gold: #2155d6;
-  --bar-bg: #ffffff;
-  --bar-text: #111827;
-  --bar-muted: #6b7280;
-  --bar-btn-line: #e2e7ee;
-  --user-bg: #e8effd;
-  --warn: #b45309;
-  --heading-font: "Pretendard", system-ui, sans-serif;
-  --radius: 10px;
-  --radius-lg: 16px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 4px 16px rgba(16, 24, 40, .06);
-}
 @media (prefers-color-scheme: dark) {
-  :root[data-design="classic"] {
+  :root {
     --bg: #11161f; --surface: #182030; --surface-2: #1e2738; --text: #ece6d8; --muted: #a9a294;
     --line: #2d3748; --accent: #c9a66b; --accent-text: #11161f; --gold: #c9a66b;
     --bar-bg: #0c1220; --bar-text: #ece6d8; --bar-muted: #a9a294; --bar-btn-line: rgba(236, 230, 216, .3); --warn: #f0b860;
-  }
-  :root[data-design="modern"] {
-    --bg: #0f1218; --surface: #171b23; --surface-2: #1d2330; --text: #eef1f6; --muted: #9aa4b2;
-    --line: #2a313d; --accent: #6d9bff; --accent-text: #0b1020; --gold: #6d9bff;
-    --bar-bg: #171b23; --bar-text: #eef1f6; --bar-muted: #9aa4b2; --bar-btn-line: #2a313d; --user-bg: #1c2a48; --warn: #f5b04c;
   }
 }
 
@@ -97,7 +67,6 @@ button.primary { background: var(--accent); color: var(--accent-text); border-co
   background: var(--bar-bg); color: var(--bar-text);
   border-bottom: 3px solid var(--gold);
 }
-[data-design="modern"] .topbar { border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 12px; }
 .brand-mark { width: 34px; height: 34px; color: var(--gold); flex: none; }
 .brand h1 { margin: 0; font-family: var(--heading-font); font-size: 1.3rem; letter-spacing: .02em; line-height: 1.2; }
@@ -106,7 +75,6 @@ button.primary { background: var(--accent); color: var(--accent-text); border-co
 .actions > button, .actions .dropdown > button { background: transparent; color: var(--bar-text); border-color: var(--bar-btn-line); }
 .actions > button:hover, .actions .dropdown > button:hover { border-color: var(--gold); }
 .actions > button.primary { background: var(--gold); border-color: var(--gold); color: #fff; }
-[data-design="modern"] .actions > button.primary { color: var(--accent-text); }
 .dropdown { position: relative; }
 .menu {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 10;
@@ -123,12 +91,12 @@ button.primary { background: var(--accent); color: var(--accent-text); border-co
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg);
   padding: 32px; box-shadow: var(--shadow);
 }
-[data-design="classic"] .welcome { border-top: 3px solid var(--gold); }
+.welcome { border-top: 3px solid var(--gold); }
 .eyebrow { margin: 0; color: var(--gold); font-size: .8rem; font-weight: 700; letter-spacing: .12em; }
 .welcome h2 { margin: 4px 0 8px; font-family: var(--heading-font); font-size: 1.6rem; line-height: 1.35; }
 .pillars { list-style: none; padding: 0; margin: 20px 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .pillars li { background: var(--surface-2); border-radius: var(--radius); padding: 12px 14px; border: 1px solid var(--line); }
-[data-design="classic"] .pillars li { background: transparent; border: 0; border-left: 2px solid var(--gold); border-radius: 0; }
+.pillars li { background: transparent; border: 0; border-left: 2px solid var(--gold); border-radius: 0; }
 .pillars strong { display: block; font-size: .95rem; }
 .pillars span { display: block; font-size: .82rem; color: var(--muted); line-height: 1.5; }
 .examples { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
@@ -140,27 +108,16 @@ button.primary { background: var(--accent); color: var(--accent-text); border-co
 .msg.user { white-space: pre-wrap; }
 .msg .att { font-size: .88rem; color: var(--muted); }
 /* classic: 질문은 금색 세로줄, 답변은 문서 카드 */
-[data-design="classic"] .msg.user { padding: 4px 0 4px 16px; border-left: 3px solid var(--gold); }
-[data-design="classic"] .msg.assistant {
+.msg.user { padding: 4px 0 4px 16px; border-left: 3px solid var(--gold); }
+.msg.assistant {
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px 26px;
 }
-[data-design="classic"] .msg.assistant > .who {
+.msg.assistant > .who {
   font-family: var(--heading-font); color: var(--accent); font-size: .95rem; letter-spacing: .08em;
   padding-bottom: 8px; border-bottom: 1px solid var(--gold); margin-bottom: 12px;
 }
-/* modern: 오른쪽 말풍선 + 흰 카드 */
-[data-design="modern"] .msg.user {
-  margin-left: auto; max-width: 85%; width: fit-content;
-  background: var(--user-bg); border-radius: var(--radius-lg) var(--radius-lg) 4px var(--radius-lg); padding: 12px 16px;
-}
-[data-design="modern"] .msg.user .who { display: none; }
-[data-design="modern"] .msg.assistant {
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px 24px; box-shadow: var(--shadow);
-}
-[data-design="modern"] .msg.assistant > .who { color: var(--accent); }
 .msg.assistant h1, .msg.assistant h2, .msg.assistant h3 { font-family: var(--heading-font); font-size: 1.08rem; margin: 1em 0 .35em; }
-.msg.assistant strong { color: var(--accent); }
-[data-design="classic"] .msg.assistant strong { color: inherit; }
+.msg.assistant strong { color: inherit; }
 .msg.assistant table { border-collapse: collapse; display: block; overflow-x: auto; }
 .msg.assistant td, .msg.assistant th { border: 1px solid var(--line); padding: 4px 8px; }
 .msg.assistant blockquote { margin: .6em 0; padding: .2em 1em; border-left: 3px solid var(--line); color: var(--muted); }
@@ -201,7 +158,7 @@ button.primary { background: var(--accent); color: var(--accent-text); border-co
 .dialog.wide { width: min(720px, calc(100vw - 32px)); }
 .dialog::backdrop { background: rgba(10, 16, 28, .5); }
 .dialog h2 { margin: 0 0 16px; font-family: var(--heading-font); font-size: 1.3rem; }
-[data-design="classic"] .dialog h2 { padding-bottom: 10px; border-bottom: 1px solid var(--gold); }
+.dialog h2 { padding-bottom: 10px; border-bottom: 1px solid var(--gold); }
 .field { margin-bottom: 18px; }
 .field-label { display: block; font-weight: 700; margin-bottom: 6px; }
 .dialog input[type="password"], .dialog input[type="text"], .dialog select {
@@ -235,8 +192,7 @@ button.primary { background: var(--accent); color: var(--accent-text); border-co
   .chat { padding: 16px 12px; }
   .welcome { padding: 20px; }
   .pillars { grid-template-columns: 1fr; }
-  [data-design="classic"] .msg.assistant, [data-design="modern"] .msg.assistant { padding: 16px; }
-  [data-design="modern"] .msg.user { max-width: 92%; }
+  .msg.assistant { padding: 16px; }
   .composer { padding: 10px 12px; }
 }
 
